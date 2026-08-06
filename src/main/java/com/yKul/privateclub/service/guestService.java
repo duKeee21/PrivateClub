@@ -15,8 +15,5 @@ public class guestService {
         this.guestRepository = guestRepository;
     }
 
-    @GetMapping
-    public List<guest> findAll() {
-        return guestRepository.findAll();
-    }
+
 }
