@@ -1,5 +1,7 @@
 package com.yKul.privateclub.service;
 
+import com.yKul.privateclub.dto.GuestDto;
+import com.yKul.privateclub.dto.GuestMapper;
 import com.yKul.privateclub.entity.Guest;
 import com.yKul.privateclub.repository.GuestRepository;
 import lombok.AllArgsConstructor;
@@ -7,56 +9,72 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class GuestService {
     private final GuestRepository guestRepository;
 
-    public List<Guest> allGuests() {
-        return guestRepository.findAll();
+    public List<GuestDto> allGuests() {
+        return guestRepository.findAll()
+                .stream()
+                .map(GuestMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    public Guest findById(Long id) {
-        return guestRepository.findById(id)
+    public GuestDto findById(Long id) {
+        Guest guest = guestRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
+        return GuestMapper.toDto(guest);
     }
 
-    public Guest createGuest(Guest guest) {
-        Optional<Guest> optionalGuest = guestRepository.findByEmail(guest.getEmail());
+    public GuestDto createGuest(GuestDto guestDto) {
+        Optional<Guest> optionalGuest = guestRepository.findByEmail(guestDto.email());
         if (optionalGuest.isPresent()) {
             throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
         }
-        return guestRepository.save(guest);
+
+        Guest guest = GuestMapper.toEntity(guestDto);
+        Guest s = guestRepository.save(guest);
+
+        return GuestMapper.toDto(s);
     }
 
     public void deleteGuest(Long id) {
-        findById(id);
-        guestRepository.deleteById(id);
+        Guest guest =  guestRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
+        guestRepository.delete(guest);
     }
 
-    public void updateGuest(Long id, String firstName, String secondName, String email) {
+    public GuestDto updateGuest(Long id, GuestDto guestDto) {
 
-        Guest guest = findById(id);
+        Guest guest = guestRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
 
-        if (email != null && !email.equals(guest.getEmail())) {
-            Optional<Guest> foundByEmailGuest = guestRepository.findByEmail(guest.getEmail());
+        if (guestDto.email() != null && !guestDto.email().equals(guest.getEmail())) {
+            Optional<Guest> foundByEmailGuest = guestRepository.findByEmail(guestDto.email());
             if (foundByEmailGuest.isPresent()) {
                 throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
             }
-            guest.setEmail(email);
+            guest.setEmail(guestDto.email());
         }
 
-        if (firstName != null && !firstName.equals(guest.getFirstName())) {
-            guest.setFirstName(firstName);
+        if (guestDto.firstName() != null && !guestDto.firstName().equals(guest.getFirstName())) {
+            guest.setFirstName(guestDto.firstName());
         }
 
-        if (secondName != null && !secondName.equals(guest.getSecondName())) {
-            guest.setSecondName(secondName);
+        if (guestDto.secondName() != null && !guestDto.secondName().equals(guest.getSecondName())) {
+            guest.setSecondName(guestDto.secondName());
         }
 
-        guestRepository.save(guest);
+        Guest updatedGuest = guestRepository.save(guest);
+        return GuestMapper.toDto(updatedGuest);
 
+    }
 
+    public Guest findGuestById(Long id) {
+        return guestRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
     }
 }

@@ -1,8 +1,9 @@
 package com.yKul.privateclub.controller;
 
-import com.yKul.privateclub.entity.Guest;
+import com.yKul.privateclub.dto.GuestDto;
 import com.yKul.privateclub.service.GuestService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,33 +15,32 @@ public class GuestController {
 
     private final GuestService service;
 
-    @GetMapping()
-    public List<Guest> findAllGuests() {
-
-        return service.allGuests();
+    @GetMapping
+    public ResponseEntity<List<GuestDto>> findAllGuests() {
+        return ResponseEntity.ok(service.allGuests());
     }
 
     @GetMapping("/{id}")
-    public Guest getOne(@PathVariable Long id) {
-
-        return service.findById(id);
+    public ResponseEntity<GuestDto> getOne(@PathVariable Long id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 
     @PostMapping
-    public Guest create(@RequestBody Guest guest) {
-        return service.createGuest(guest);
+    public ResponseEntity<GuestDto> create(@RequestBody GuestDto guestDto) {
+        return ResponseEntity.ok(service.createGuest(guestDto));
     }
 
-    @DeleteMapping(path = "/{id}")
-    public void delete(@PathVariable Long id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteGuest(id);
+        return ResponseEntity.noContent().build();
     }
 
-    @PutMapping(path = "/{id}")
-    public void update(@PathVariable Long id,
-                            @RequestParam(required = false) String email,
-                            @RequestParam(required = false) String firstName,
-                            @RequestParam(required = false) String secondName) {
-        service.updateGuest(id, firstName, secondName, email);
+    @PutMapping("/{id}")
+    public ResponseEntity<GuestDto> update(
+            @PathVariable Long id,
+            @RequestBody GuestDto guestDto) {
+        GuestDto updatedGuest = service.updateGuest(id, guestDto);
+        return ResponseEntity.ok(updatedGuest);
     }
 }

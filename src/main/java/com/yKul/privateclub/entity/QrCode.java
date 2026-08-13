@@ -21,7 +21,6 @@ public class QrCode {
    @GeneratedValue(strategy = GenerationType.IDENTITY)
    private Long id;
 
-   @GeneratedValue(strategy = GenerationType.UUID)
    @Column(name = "uuid", nullable = false, unique = true)
    private UUID uuid;
 
