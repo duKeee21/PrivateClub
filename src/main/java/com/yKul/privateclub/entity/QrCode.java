@@ -1,31 +1,26 @@
 package com.yKul.privateclub.entity;
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Builder
-@Data
-@Entity
-@AllArgsConstructor
 @NoArgsConstructor
-
+@AllArgsConstructor
+@Entity
 @Table(name = "qr")
 public class QrCode {
 
-   @Id
-   @GeneratedValue(strategy = GenerationType.IDENTITY)
-   private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-   @Column(name = "uuid", nullable = false, unique = true)
-   private UUID uuid;
+    @Column(name = "uuid", nullable = false, unique = true)
+    private UUID uuid;
 
-   @ManyToOne(fetch = FetchType.LAZY)
-   @JoinColumn(name = "id_guest", nullable = false)
-   private Guest guest;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_guest", nullable = false)
+    private Guest guest;
 
 }

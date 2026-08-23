@@ -4,15 +4,14 @@ import com.yKul.privateclub.dto.GuestDto;
 import com.yKul.privateclub.dto.GuestMapper;
 import com.yKul.privateclub.entity.Guest;
 import com.yKul.privateclub.repository.GuestRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class GuestService {
     private final GuestRepository guestRepository;
 
@@ -30,10 +29,11 @@ public class GuestService {
     }
 
     public GuestDto createGuest(GuestDto guestDto) {
-        Optional<Guest> optionalGuest = guestRepository.findByEmail(guestDto.email());
-        if (optionalGuest.isPresent()) {
-            throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
-        }
+        guestRepository.findByEmail(guestDto.email())
+                .ifPresent(g -> {
+                    throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
+                });
+
 
         Guest guest = GuestMapper.toEntity(guestDto);
         Guest s = guestRepository.save(guest);
@@ -42,7 +42,7 @@ public class GuestService {
     }
 
     public void deleteGuest(Long id) {
-        Guest guest =  guestRepository.findById(id)
+        Guest guest = guestRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
         guestRepository.delete(guest);
     }
@@ -53,10 +53,10 @@ public class GuestService {
                 .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
 
         if (guestDto.email() != null && !guestDto.email().equals(guest.getEmail())) {
-            Optional<Guest> foundByEmailGuest = guestRepository.findByEmail(guestDto.email());
-            if (foundByEmailGuest.isPresent()) {
-                throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
-            }
+            guestRepository.findByEmail(guestDto.email())
+                    .ifPresent(g -> {
+                        throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
+                    });
             guest.setEmail(guestDto.email());
         }
 

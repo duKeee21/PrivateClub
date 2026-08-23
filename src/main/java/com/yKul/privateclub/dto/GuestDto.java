@@ -6,5 +6,4 @@ public record GuestDto(
         String firstName,
         String secondName,
         String email
-) {
-}
+) { }
