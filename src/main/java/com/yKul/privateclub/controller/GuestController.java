@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/guests")
@@ -42,5 +43,11 @@ public class GuestController {
             @RequestBody GuestDto guestDto) {
         GuestDto updatedGuest = service.updateGuest(id, guestDto);
         return ResponseEntity.ok(updatedGuest);
+    }
+
+    @PutMapping("/qr/useqr")
+    public ResponseEntity<UUID> rotateQr(@RequestParam UUID currentUuid) {
+        UUID newUuid = service.newQr(currentUuid);
+        return ResponseEntity.ok(newUuid);
     }
 }

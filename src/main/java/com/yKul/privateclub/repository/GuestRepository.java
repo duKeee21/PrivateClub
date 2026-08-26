@@ -5,12 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
 @Repository
 public interface GuestRepository extends JpaRepository<Guest, Long> {
 
-    @Query(value = "SELECT * FROM guests WHERE email = :email", nativeQuery = true)
     Optional<Guest> findByEmail(String email);
+
+    @Query("SELECT g FROM Guest g JOIN FETCH g.qrCodes")
+    List<Guest> findAllWithQrCodes();
 }

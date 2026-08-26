@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3-add-is-deleted-to-guests
+      author: yKul
+      changes:
+        - addColumn:
+            tableName: guests
+            columns:
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

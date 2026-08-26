@@ -3,29 +3,37 @@ package com.yKul.privateclub.service;
 import com.yKul.privateclub.dto.GuestDto;
 import com.yKul.privateclub.dto.GuestMapper;
 import com.yKul.privateclub.entity.Guest;
+import com.yKul.privateclub.entity.QrCode;
 import com.yKul.privateclub.repository.GuestRepository;
+import com.yKul.privateclub.repository.QrRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class GuestService {
     private final GuestRepository guestRepository;
+    private final GuestMapper guestMapper;
+    private final QrRepository qrRepository;
 
     public List<GuestDto> allGuests() {
-        return guestRepository.findAll()
+        return guestRepository.findAllWithQrCodes()
                 .stream()
-                .map(GuestMapper::toDto)
+                .map(guestMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     public GuestDto findById(Long id) {
         Guest guest = guestRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
-        return GuestMapper.toDto(guest);
+        return guestMapper.toDto(guest);
     }
 
     public GuestDto createGuest(GuestDto guestDto) {
@@ -35,10 +43,16 @@ public class GuestService {
                 });
 
 
-        Guest guest = GuestMapper.toEntity(guestDto);
-        Guest s = guestRepository.save(guest);
+        Guest guest = guestMapper.toEntity(guestDto);
 
-        return GuestMapper.toDto(s);
+        QrCode qrCode = QrCode.builder()
+                .uuid(UUID.randomUUID())
+                .build();
+        guest.addQr(qrCode);
+
+        Guest savedGuest = guestRepository.save(guest);
+
+        return guestMapper.toDto(savedGuest);
     }
 
     public void deleteGuest(Long id) {
@@ -69,12 +83,18 @@ public class GuestService {
         }
 
         Guest updatedGuest = guestRepository.save(guest);
-        return GuestMapper.toDto(updatedGuest);
+        return guestMapper.toDto(updatedGuest);
 
     }
 
-    public Guest findGuestById(Long id) {
-        return guestRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
+    public UUID newQr(UUID currentUuid) {
+        QrCode qrCode = qrRepository.findByUuid(currentUuid)
+                .orElseThrow(() -> new EntityNotFoundException("QR" + currentUuid + " не найден!"));
+
+        UUID newUuid = UUID.randomUUID();
+        qrCode.setUuid(newUuid);
+        qrRepository.save(qrCode);
+
+        return newUuid;
     }
 }

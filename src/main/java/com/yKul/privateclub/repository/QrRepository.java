@@ -8,9 +8,5 @@ import java.util.UUID;
 
 public interface QrRepository extends JpaRepository<QrCode, Long> {
 
-    Optional<QrCode> findByGuestId(Long guestId);
-
     Optional<QrCode> findByUuid(UUID uuid);
-
-    void deleteByGuestId(Long guestId);
 }
