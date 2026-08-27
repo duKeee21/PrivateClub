@@ -7,9 +7,9 @@ import com.yKul.privateclub.entity.QrCode;
 import com.yKul.privateclub.repository.GuestRepository;
 import com.yKul.privateclub.repository.QrRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +23,7 @@ public class GuestService {
     private final GuestMapper guestMapper;
     private final QrRepository qrRepository;
 
+    @Transactional(readOnly = true)
     public List<GuestDto> allGuests() {
         return guestRepository.findAllWithQrCodes()
                 .stream()
@@ -30,18 +31,14 @@ public class GuestService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public GuestDto findById(Long id) {
         Guest guest = guestRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
+                .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
         return guestMapper.toDto(guest);
     }
 
     public GuestDto createGuest(GuestDto guestDto) {
-        guestRepository.findByEmail(guestDto.email())
-                .ifPresent(g -> {
-                    throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
-                });
-
 
         Guest guest = guestMapper.toEntity(guestDto);
 
@@ -57,22 +54,15 @@ public class GuestService {
 
     public void deleteGuest(Long id) {
         Guest guest = guestRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
-        guestRepository.delete(guest);
+                .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
+
+        guest.setIsDeleted(true);
     }
 
     public GuestDto updateGuest(Long id, GuestDto guestDto) {
 
         Guest guest = guestRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Гостя с id: " + id + " не существует!"));
-
-        if (guestDto.email() != null && !guestDto.email().equals(guest.getEmail())) {
-            guestRepository.findByEmail(guestDto.email())
-                    .ifPresent(g -> {
-                        throw new IllegalStateException("Гость с такой почтой уже зарегистрирован!");
-                    });
-            guest.setEmail(guestDto.email());
-        }
+                .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
 
         if (guestDto.firstName() != null && !guestDto.firstName().equals(guest.getFirstName())) {
             guest.setFirstName(guestDto.firstName());
@@ -82,9 +72,7 @@ public class GuestService {
             guest.setSecondName(guestDto.secondName());
         }
 
-        Guest updatedGuest = guestRepository.save(guest);
-        return guestMapper.toDto(updatedGuest);
-
+        return guestMapper.toDto(guest);
     }
 
     public UUID newQr(UUID currentUuid) {
