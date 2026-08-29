@@ -40,7 +40,7 @@ public class GuestController {
     public ResponseEntity<GuestDto> update(
             @PathVariable Long id,
             @RequestBody GuestDto guestDto) {
-        GuestDto updatedGuest = service.updateGuest(id, guestDto);
-        return ResponseEntity.ok(updatedGuest);
+        service.updateGuest(id, guestDto);
+        return ResponseEntity.ok().build();
     }
 }

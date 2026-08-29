@@ -1,10 +1,10 @@
 databaseChangeLog:
   - changeSet:
-      id: 3-add-is-deleted-to-guests
-      author: yKul
+      id: 2-add-is-deleted-to-qr
+      author: serj
       changes:
         - addColumn:
-            tableName: guests
+            tableName: qr
             columns:
               - column:
                   name: is_deleted

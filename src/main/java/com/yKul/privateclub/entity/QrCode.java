@@ -1,6 +1,9 @@
 package com.yKul.privateclub.entity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 import java.util.UUID;
 
 @Getter
@@ -10,6 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "qr")
+@SQLDelete(sql = "UPDATE qr SET is_deleted = true WHERE id = ?")
+@SQLRestriction("is_deleted = false")
 public class QrCode {
 
     @Id
@@ -18,6 +23,9 @@ public class QrCode {
 
     @Column(name = "uuid", nullable = false, unique = true)
     private UUID uuid;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_guest", nullable = false)

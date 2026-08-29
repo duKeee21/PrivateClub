@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 1-create-guests-table
-      author: yKul
+      author: serj
       changes:
         - createTable:
             tableName: guests
@@ -38,7 +38,7 @@ databaseChangeLog:
 
   - changeSet:
       id: 2-create-qr-table
-      author: yKul
+      author: serj
       changes:
         - createTable:
             tableName: qr

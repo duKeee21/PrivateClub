@@ -6,7 +6,12 @@ import com.yKul.privateclub.entity.Guest;
 import com.yKul.privateclub.entity.QrCode;
 import com.yKul.privateclub.repository.GuestRepository;
 import com.yKul.privateclub.repository.QrRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,11 +22,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class GuestService {
     private final GuestRepository guestRepository;
     private final GuestMapper guestMapper;
     private final QrRepository qrRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<GuestDto> allGuests() {
@@ -38,51 +44,57 @@ public class GuestService {
         return guestMapper.toDto(guest);
     }
 
+    @Transactional
     public GuestDto createGuest(GuestDto guestDto) {
 
         Guest guest = guestMapper.toEntity(guestDto);
+        Guest savedGuest = guestRepository.save(guest);
 
         QrCode qrCode = QrCode.builder()
                 .uuid(UUID.randomUUID())
+                .guest(guest)
                 .build();
         guest.addQr(qrCode);
 
-        Guest savedGuest = guestRepository.save(guest);
+        qrRepository.save(qrCode);
+        savedGuest.addQr(qrCode);
 
         return guestMapper.toDto(savedGuest);
     }
 
+    @Transactional
     public void deleteGuest(Long id) {
         Guest guest = guestRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
 
         guest.setIsDeleted(true);
+        guestRepository.save(guest);
     }
 
-    public GuestDto updateGuest(Long id, GuestDto guestDto) {
+    @Transactional
+    public void updateGuest(Long id, GuestDto guestDto) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaUpdate<Guest> update = cb.createCriteriaUpdate(Guest.class);
+        Root<Guest> root = update.from(Guest.class);
 
-        Guest guest = guestRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
-
-        if (guestDto.firstName() != null && !guestDto.firstName().equals(guest.getFirstName())) {
-            guest.setFirstName(guestDto.firstName());
+        if (guestDto.firstName() != null && !guestDto.firstName().isBlank()) {
+            update.set(root.get("firstName"), guestDto.firstName());
         }
 
-        if (guestDto.secondName() != null && !guestDto.secondName().equals(guest.getSecondName())) {
-            guest.setSecondName(guestDto.secondName());
+        if (guestDto.secondName() != null && !guestDto.secondName().isBlank()) {
+            update.set(root.get("secondName"), guestDto.secondName());
         }
 
-        return guestMapper.toDto(guest);
+        if (guestDto.email() != null && !guestDto.email().isBlank()) {
+            update.set(root.get("email"), guestDto.email());
+        }
+
+        update.where(cb.equal(root.get("id"), id));
+        int updatedCount = entityManager.createQuery(update).executeUpdate();
+
+        if (updatedCount == 0) {
+            throw new EntityNotFoundException("Гостя с id: " + id + " не существует!");
+        }
     }
 
-    public UUID newQr(UUID currentUuid) {
-        QrCode qrCode = qrRepository.findByUuid(currentUuid)
-                .orElseThrow(() -> new EntityNotFoundException("QR" + currentUuid + " не найден!"));
-
-        UUID newUuid = UUID.randomUUID();
-        qrCode.setUuid(newUuid);
-        qrRepository.save(qrCode);
-
-        return newUuid;
-    }
 }
