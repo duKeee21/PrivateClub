@@ -68,6 +68,14 @@ public class GuestService {
                 .orElseThrow(() -> new EntityNotFoundException("Гостя с id: " + id + " не существует!"));
 
         guest.setIsDeleted(true);
+
+        if (guest.getQrCodes() != null) {
+            guest.getQrCodes().forEach(qr -> {
+                qr.setDeleted(true);
+                qrRepository.save(qr);
+            });
+        }
+
         guestRepository.save(guest);
     }
 
