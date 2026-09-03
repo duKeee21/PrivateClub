@@ -6,5 +6,5 @@ public interface GuestMapper {
 
     GuestDto toDto(Guest g);
 
-    Guest toEntity(GuestDto dto);
+    Guest toEntity(GuestCreateDto dto);
 }

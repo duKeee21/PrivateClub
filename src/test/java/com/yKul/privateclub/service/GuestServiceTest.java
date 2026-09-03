@@ -1,7 +1,9 @@
 package com.yKul.privateclub.service;
 
+import com.yKul.privateclub.dto.GuestCreateDto;
 import com.yKul.privateclub.dto.GuestDto;
 import com.yKul.privateclub.dto.GuestMapper;
+import com.yKul.privateclub.dto.GuestUpdateDto;
 import com.yKul.privateclub.entity.Guest;
 import com.yKul.privateclub.entity.QrCode;
 import com.yKul.privateclub.repository.GuestRepository;
@@ -131,7 +133,7 @@ class GuestServiceTest {
 
     @Test
     void createGuest_Success() {
-        GuestDto inputDto = new GuestDto(null, "Shao", "Kahn", "molotok@mail.com", null);
+        GuestCreateDto inputDto = new GuestCreateDto("Shao", "Kahn", "molotok@mail.com");
         Guest initialGuest = Guest.builder().firstName("Shao").secondName("Kahn").email("molotok@mail.com").build();
         Guest savedGuest = Guest.builder().id(1L).firstName("Shao").secondName("Kahn").email("molotok@mail.com").build();
         GuestDto expectedDto = new GuestDto(1L, "Shao", "Kahn", "molotok@mail.com", UUID.randomUUID());
@@ -149,7 +151,7 @@ class GuestServiceTest {
 
     @Test
     void createGuest_WhenSaveFails_ThrowsException() {
-        GuestDto inputDto = new GuestDto(null, "Shao", "Kahn", "molotok@mail.com", null);
+        GuestCreateDto inputDto = new GuestCreateDto("Shao", "Kahn", "molotok@mail.com");
         Guest initialGuest = Guest.builder().firstName("Shao").secondName("Kahn").email("molotok@mail.com").build();
 
         when(guestMapper.toEntity(inputDto)).thenReturn(initialGuest);
@@ -162,7 +164,7 @@ class GuestServiceTest {
 
     @Test
     void createGuest_DuplicateEmail_ThrowsException() {
-        GuestDto inputDto = new GuestDto(null, "Shao", "Kahn", "existing@mail.com", null);
+        GuestCreateDto inputDto = new GuestCreateDto("Shao", "Kahn", "existing@mail.com");
         Guest initialGuest = Guest.builder().firstName("Shao").secondName("Kahn").email("existing@mail.com").build();
 
         when(guestMapper.toEntity(inputDto)).thenReturn(initialGuest);
@@ -210,7 +212,7 @@ class GuestServiceTest {
         guestService.deleteGuest(1L);
 
         assertThat(qrCode.isDeleted()).isTrue();
-        verify(qrRepository).save(qrCode);
+        verify(guestRepository).save(guest);
     }
 
     private void mockCriteriaUpdate() {
@@ -226,7 +228,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(0);
 
-        GuestDto dto = new GuestDto(null, "NewName", null, null, null);
+        GuestUpdateDto dto = new GuestUpdateDto("NewName", null, null);
 
         assertThatThrownBy(() -> guestService.updateGuest(999L, dto))
                 .isInstanceOf(EntityNotFoundException.class)
@@ -238,7 +240,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(1);
 
-        GuestDto dto = new GuestDto(null, "NewName", null, null, null);
+        GuestUpdateDto dto = new GuestUpdateDto("NewName", null, null);
         guestService.updateGuest(1L, dto);
 
         verify(criteriaUpdate, times(1)).set(pathCaptor.capture(), valueCaptor.capture());
@@ -250,7 +252,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(1);
 
-        GuestDto dto = new GuestDto(null, "NewName", "NewSurname", "new@mail.com", null);
+        GuestUpdateDto dto = new GuestUpdateDto("NewName", "NewSecondname", "new@mail.com");
         guestService.updateGuest(1L, dto);
 
         verify(criteriaUpdate, times(3)).set(pathCaptor.capture(), valueCaptor.capture());
@@ -262,7 +264,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(1);
 
-        GuestDto dto = new GuestDto(null, null, null, "newemail@mail.com", null);
+        GuestUpdateDto dto = new GuestUpdateDto(null, null, "newemail@mail.com");
         guestService.updateGuest(1L, dto);
 
         verify(criteriaUpdate, times(1)).set(pathCaptor.capture(), valueCaptor.capture());
@@ -274,7 +276,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(1);
 
-        GuestDto dto = new GuestDto(null, null, "", "  ", null);
+        GuestUpdateDto dto = new GuestUpdateDto("", "  ", null);
         guestService.updateGuest(1L, dto);
 
         verify(criteriaUpdate, never()).set(pathCaptor.capture(), valueCaptor.capture());
@@ -286,7 +288,7 @@ class GuestServiceTest {
         mockCriteriaUpdate();
         when(query.executeUpdate()).thenReturn(1);
 
-        GuestDto dto = new GuestDto(null, null, null, null, null);
+        GuestUpdateDto dto = new GuestUpdateDto(null, null, null);
         guestService.updateGuest(1L, dto);
 
         verify(criteriaUpdate, never()).set(pathCaptor.capture(), valueCaptor.capture());

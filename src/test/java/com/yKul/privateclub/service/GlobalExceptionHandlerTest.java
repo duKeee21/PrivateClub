@@ -55,4 +55,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getMessage()).contains("Ошибка сервера: Супер ошибка");
     }
+
+
 }

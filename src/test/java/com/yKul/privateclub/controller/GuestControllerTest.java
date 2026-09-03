@@ -1,105 +1,128 @@
 package com.yKul.privateclub.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yKul.privateclub.dto.GuestDto;
-import com.yKul.privateclub.service.GuestService;
+import com.yKul.privateclub.dto.GuestCreateDto;
+import com.yKul.privateclub.dto.GuestUpdateDto;
+import com.yKul.privateclub.entity.Guest;
+import com.yKul.privateclub.repository.GuestRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class GuestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
+    private GuestRepository guestRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
-    private GuestService guestService;
-
     @Test
-    void findAllGuests_ShouldReturnGuestList() throws Exception {
-        GuestDto guest1 = new GuestDto(1L, "Kung", "Lao", "shlyapa2mail.com", UUID.randomUUID());
-        GuestDto guest2 = new GuestDto(2L, "Shao", "Kang", "molotok@mail.com", UUID.randomUUID());
-        when(guestService.allGuests()).thenReturn(List.of(guest1, guest2));
-
-        mockMvc.perform(get("/api/v1/guests"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-
-        verify(guestService).allGuests();
-    }
-
-    @Test
+    @Sql(scripts = "/sql/insert_guest.sql")
     void getOne_ShouldReturnGuest_WhenIdExists() throws Exception {
         Long guestId = 1L;
-        GuestDto guestDto = new GuestDto(1L, "Liu", "Kang", "drakon@mail.com", UUID.randomUUID());
-        when(guestService.findById(guestId)).thenReturn(guestDto);
 
         mockMvc.perform(get("/api/v1/guests/{id}", guestId))
-                .andExpect(status().isOk());
-
-        verify(guestService).findById(guestId);
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(guestId))
+                .andExpect(jsonPath("$.firstName").value("Liu"))
+                .andExpect(jsonPath("$.secondName").value("Kang"))
+                .andExpect(jsonPath("$.email").value("drakon@mail.com"));
     }
 
     @Test
-    void create_ShouldReturnCreatedGuest() throws Exception {
-        GuestDto inputDto = new GuestDto(1L, "Sonya", "Blade", "shpagat@mail.com", UUID.randomUUID());
-        GuestDto createdDto = new GuestDto(2L, "Johnny", "Cage", "starr@mail.com", UUID.randomUUID());
-        when(guestService.createGuest(any(GuestDto.class))).thenReturn(createdDto);
+    void create_ShouldSaveGuestToDatabase() throws Exception {
+        GuestCreateDto createDto = new GuestCreateDto("Sub", "Zero", "ice@mail.com");
 
         mockMvc.perform(post("/api/v1/guests")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(inputDto)))
-                .andExpect(status().isOk());
+                        .content(objectMapper.writeValueAsString(createDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Sub"))
+                .andExpect(jsonPath("$.email").value("ice@mail.com"));
 
-        verify(guestService).createGuest(any(GuestDto.class));
+        Guest savedGuest = guestRepository.findAll().stream()
+                .filter(g -> "ice@mail.com".equals(g.getEmail()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(savedGuest.getFirstName()).isEqualTo("Sub");
+        assertThat(savedGuest.getSecondName()).isEqualTo("Zero");
     }
 
     @Test
-    void delete_ShouldReturn204() throws Exception {
+    @Sql(scripts = "/sql/insert_guest.sql")
+    void update_ShouldUpdateGuestInDatabase() throws Exception {
         Long guestId = 1L;
-        doNothing().when(guestService).deleteGuest(guestId);
+        GuestUpdateDto updateDto = new GuestUpdateDto("Billy", "Butcher", "boy@mail.com");
+
+        mockMvc.perform(put("/api/v1/guests/{id}", guestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isOk());
+
+        Guest updatedGuest = guestRepository.findById(guestId).orElseThrow();
+        assertThat(updatedGuest.getFirstName()).isEqualTo("Billy");
+        assertThat(updatedGuest.getSecondName()).isEqualTo("Butcher");
+        assertThat(updatedGuest.getEmail()).isEqualTo("boy@mail.com");
+    }
+
+    @Test
+    @Sql(scripts = "/sql/insert_guest.sql")
+    void delete_ShouldMarkGuestAsDeletedInDatabase() throws Exception {
+        Long guestId = 1L;
 
         mockMvc.perform(delete("/api/v1/guests/{id}", guestId))
                 .andExpect(status().isNoContent());
 
-        verify(guestService).deleteGuest(guestId);
+        Guest deletedGuest = guestRepository.findById(guestId).orElseThrow();
+        assertThat(deletedGuest.getIsDeleted()).isTrue();
     }
 
     @Test
-    void update_ShouldReturn200() throws Exception {
-        Long guestId = 1L;
-        GuestDto inputDto = new GuestDto(1L, "Jax","Briggs","zhelezki@mail.com", UUID.randomUUID());
-        doNothing().when(guestService).updateGuest(eq(guestId), any(GuestDto.class));
+    void create_ShouldReturnBadRequest_WhenFirstNameIsBlank() throws Exception {
 
-        mockMvc.perform(put("/api/v1/guests/{id}", guestId)
+        GuestCreateDto invalidDto = new GuestCreateDto("   ", "Lao", "shlyapa@mail.com");
+
+        mockMvc.perform(post("/api/v1/guests")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(inputDto)))
-                .andExpect(status().isOk());
+                        .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("firstName: Имя обязательно для заполнения"));
+    }
 
-        verify(guestService).updateGuest(eq(guestId), any(GuestDto.class));
+    @Test
+    void create_ShouldReturnBadRequest_WhenEmailIsInvalid() throws Exception {
+
+        GuestCreateDto invalidDto = new GuestCreateDto("Kung", "Lao", "invalidMail");
+
+        mockMvc.perform(post("/api/v1/guests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("email: Некорректный email"));
+    }
+
+    @Test
+    void getOne_ShouldReturnNotFound_WhenIdDoesNotExist() throws Exception {
+        Long nonexistentId = 999L;
+
+        mockMvc.perform(get("/api/v1/guests/{id}", nonexistentId))
+                .andExpect(status().isNotFound());
     }
 }

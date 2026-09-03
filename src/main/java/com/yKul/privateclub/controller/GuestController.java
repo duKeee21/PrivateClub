@@ -1,7 +1,10 @@
 package com.yKul.privateclub.controller;
 
+import com.yKul.privateclub.dto.GuestCreateDto;
 import com.yKul.privateclub.dto.GuestDto;
+import com.yKul.privateclub.dto.GuestUpdateDto;
 import com.yKul.privateclub.service.GuestService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +29,8 @@ public class GuestController {
     }
 
     @PostMapping
-    public ResponseEntity<GuestDto> create(@RequestBody GuestDto guestDto) {
-        return ResponseEntity.ok(service.createGuest(guestDto));
+    public ResponseEntity<GuestDto> create(@Valid @RequestBody GuestCreateDto guestCreateDto) {
+        return ResponseEntity.ok(service.createGuest(guestCreateDto));
     }
 
     @DeleteMapping("/{id}")
@@ -39,8 +42,8 @@ public class GuestController {
     @PutMapping("/{id}")
     public ResponseEntity<GuestDto> update(
             @PathVariable Long id,
-            @RequestBody GuestDto guestDto) {
-        service.updateGuest(id, guestDto);
+            @Valid @RequestBody GuestUpdateDto guestUpdateDto) {
+        service.updateGuest(id, guestUpdateDto);
         return ResponseEntity.ok().build();
     }
 }

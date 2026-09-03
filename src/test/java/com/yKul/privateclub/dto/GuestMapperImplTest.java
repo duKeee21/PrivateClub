@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GuestMapperImplTest {
 
-    private final GuestMapperImpl guestMapper = new GuestMapperImpl();
+    private final GuestMapper guestMapper = new GuestMapperImpl();
 
     @Test
     void toDto_Null_ReturnsNull() {
@@ -29,12 +29,12 @@ class GuestMapperImplTest {
     }
 
     @Test
-    void toDto_MultipleQrs_ReturnsFirstQrUuid() {
+    void toDto_MultipleQrs_ReturnsFirstActiveQrUuid() {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
 
-        QrCode qr1 = QrCode.builder().uuid(uuid1).build();
-        QrCode qr2 = QrCode.builder().uuid(uuid2).build();
+        QrCode qr1 = QrCode.builder().uuid(uuid1).isDeleted(false).build();
+        QrCode qr2 = QrCode.builder().uuid(uuid2).isDeleted(false).build();
 
         Guest guest = Guest.builder()
                 .id(1L)
@@ -48,19 +48,36 @@ class GuestMapperImplTest {
     }
 
     @Test
+    void toDto_WithDeletedQr_SkipsDeletedAndReturnsActiveQrUuid() {
+        UUID activeUuid = UUID.randomUUID();
+
+        QrCode deletedQr = QrCode.builder().uuid(UUID.randomUUID()).isDeleted(true).build();
+        QrCode activeQr = QrCode.builder().uuid(activeUuid).isDeleted(false).build();
+
+        Guest guest = Guest.builder()
+                .id(1L)
+                .qrCodes(List.of(deletedQr, activeQr))
+                .build();
+
+        GuestDto result = guestMapper.toDto(guest);
+
+        assertThat(result.qr()).isEqualTo(activeUuid);
+    }
+
+    @Test
     void toEntity_Null_ReturnsNull() {
         assertThat(guestMapper.toEntity(null)).isNull();
     }
 
     @Test
-    void toEntity_Valid_ReturnsGuestEntity() {
-        GuestDto dto = new GuestDto(1L, "Kung", "Lao", "shlyapa@mail.com", UUID.randomUUID());
+    void toEntity_ValidCreateDto_ReturnsGuestEntity() {
+        GuestCreateDto createDto = new GuestCreateDto("Kung", "Lao", "shlyapa@mail.com");
 
-        Guest entity = guestMapper.toEntity(dto);
+        Guest entity = guestMapper.toEntity(createDto);
 
-        assertThat(entity.getId()).isEqualTo(1L);
         assertThat(entity.getFirstName()).isEqualTo("Kung");
         assertThat(entity.getSecondName()).isEqualTo("Lao");
         assertThat(entity.getEmail()).isEqualTo("shlyapa@mail.com");
+        assertThat(entity.getId()).isNull();
     }
 }

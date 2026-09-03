@@ -1,7 +1,9 @@
 package com.yKul.privateclub.service;
 
+import com.yKul.privateclub.dto.GuestCreateDto;
 import com.yKul.privateclub.dto.GuestDto;
 import com.yKul.privateclub.dto.GuestMapper;
+import com.yKul.privateclub.dto.GuestUpdateDto;
 import com.yKul.privateclub.entity.Guest;
 import com.yKul.privateclub.entity.QrCode;
 import com.yKul.privateclub.repository.GuestRepository;
@@ -18,14 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class GuestService {
+
     private final GuestRepository guestRepository;
     private final GuestMapper guestMapper;
     private final QrRepository qrRepository;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -34,7 +37,7 @@ public class GuestService {
         return guestRepository.findAllWithQrCodes()
                 .stream()
                 .map(guestMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -45,19 +48,18 @@ public class GuestService {
     }
 
     @Transactional
-    public GuestDto createGuest(GuestDto guestDto) {
-
+    public GuestDto createGuest(GuestCreateDto guestDto) {
         Guest guest = guestMapper.toEntity(guestDto);
         Guest savedGuest = guestRepository.save(guest);
 
         QrCode qrCode = QrCode.builder()
                 .uuid(UUID.randomUUID())
-                .guest(guest)
+                .guest(savedGuest)
+                .isDeleted(false)
                 .build();
-        guest.addQr(qrCode);
 
-        qrRepository.save(qrCode);
         savedGuest.addQr(qrCode);
+        qrRepository.save(qrCode);
 
         return guestMapper.toDto(savedGuest);
     }
@@ -70,17 +72,14 @@ public class GuestService {
         guest.setIsDeleted(true);
 
         if (guest.getQrCodes() != null) {
-            guest.getQrCodes().forEach(qr -> {
-                qr.setDeleted(true);
-                qrRepository.save(qr);
-            });
+            guest.getQrCodes().forEach(qr -> qr.setDeleted(true));
         }
 
         guestRepository.save(guest);
     }
 
     @Transactional
-    public void updateGuest(Long id, GuestDto guestDto) {
+    public void updateGuest(Long id, GuestUpdateDto guestDto) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaUpdate<Guest> update = cb.createCriteriaUpdate(Guest.class);
         Root<Guest> root = update.from(Guest.class);
@@ -104,5 +103,4 @@ public class GuestService {
             throw new EntityNotFoundException("Гостя с id: " + id + " не существует!");
         }
     }
-
 }
