@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +34,11 @@ class GuestControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @Transactional
+    @Rollback
     @Sql(scripts = "/sql/insert_guest.sql")
     void getOne_ShouldReturnGuest_WhenIdExists() throws Exception {
-        Long guestId = 1L;
+        Long guestId = 123L;
 
         mockMvc.perform(get("/api/v1/guests/{id}", guestId))
                 .andExpect(status().isOk())
