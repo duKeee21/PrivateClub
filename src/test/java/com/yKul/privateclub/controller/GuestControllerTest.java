@@ -38,7 +38,7 @@ class GuestControllerTest {
     @Rollback
     @Sql(scripts = "/sql/insert_guest.sql")
     void getOne_ShouldReturnGuest_WhenIdExists() throws Exception {
-        Long guestId = 123L;
+        Long guestId = 1L;
 
         mockMvc.perform(get("/api/v1/guests/{id}", guestId))
                 .andExpect(status().isOk())
