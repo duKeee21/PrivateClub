@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-add-is-deleted-to-qr
+      author: serj
+      changes:
+        - addColumn:
+            tableName: qr
+            columns:
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
